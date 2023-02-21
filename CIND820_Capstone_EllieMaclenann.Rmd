@@ -1,0 +1,107 @@
+---
+title: "Ellie CIND 820 Capstone Code"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+
+fileName <- "C:/Users/Ellie Maclennan/OneDrive - Toronto Metropolitan University/Certificate - CIND820/Data/2016_CSD_Capstone/2016_CSD_Data.csv"
+
+#importing data set
+rawData <- read.csv(fileName,sep=",",
+         stringsAsFactors=FALSE,na.strings = c("",NA))
+
+#Q1) checking datatypes - says data type below
+sapply(rawData, class)
+head(rawData)
+```
+
+
+```{r}
+#using names function renaming the column heading names to be something more intuitive, for now keeping other column names as they are
+
+#renaming geographic info and identifiers
+names(rawData)[1:6]<- c("GeoUID","ProvCode","ProvName","cdCode","cdName","daName")
+
+#renaming mobility variables
+names(rawData)[7:24]<- c("Non-movers_1yr"
+,"Movers_1yr"
+,"Movers_Non-migrants_1yr"
+,"Movers_Migrants_1yr"
+,"Movers_ Migrants_External_1yr"
+,"Movers_Migrants_Internal_1yr"
+,"Movers_Migrants_Internal_Intra_1yr"
+,"Movers_Migrants_Internal_Inter_1yr"
+,"Mobility_Total_1yr"
+,"Non-movers_5yr"
+,"Movers_5yr"
+,"Movers_Non-migrants_5yr"
+,"Movers_Migrants_5yr"
+,"Movers_ Migrants_External_5yr"
+,"Movers_Migrants_Internal_5yr"
+,"Movers_Migrants_Internal_Intra_5yr"
+,"Movers_Migrants_Internal_Inter_5yr"
+,"Mobility_Total_5yr")
+
+head(rawData) #check it worked
+
+
+
+
+```
+
+
+```{r}
+#creating subsets
+
+#subsetting mobility variables (my DVs)
+subMobility <- rawData[,c(1,7:24)]
+
+
+#creating subset for geographic info <- can use to join with col0 for visualization later
+geoInfoSubset <-  rawData[, c(1:6)]
+```
+
+
+```{r}
+#function to rate variables and create difference variables
+f <- function(varA, varB){
+  #doing stuff
+}
+
+```
+
+
+```{r}
+#descriptives
+summary(subMobility)
+
+nonMoveVersusNew <- (subMobility$`Non-movers_1yr`/subMobility$Mobility_Total_1yr)- (subMobility$Movers_1yr/subMobility$Mobility_Total_1yr)
+# summary(nonMoveVersusNew)
+
+```
+
+
+```{r}
+
+#mapping (return to)
+# Loading the rgdal package
+# install.packages("rgdal")
+library(rgdal)
+
+# Reading the shapefile using readOGR()
+shapeFile <- readOGR(".", "C:/Users/Ellie Maclennan/OneDrive - Toronto Metropolitan University/Certificate - CIND820/Data/Geographic Files/2016_DA_BoundaryFile/lda_000b16a_e.shp")
+
+# View information about the shapefile
+summary(shapefile)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
