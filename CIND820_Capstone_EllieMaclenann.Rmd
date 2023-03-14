@@ -25,27 +25,28 @@ head(rawData)
 #using names function renaming the column heading names to be something more intuitive, for now keeping other column names as they are
 
 #renaming geographic info and identifiers
-names(rawData)[1:6]<- c("GeoUID","ProvCode","ProvName","cdCode","cdName","daName")
+names(rawData)[1:6]<- c("geoUID","provCode","provName","cdCode","cdName","daName")
 
 #renaming mobility variables
-names(rawData)[7:24]<- c("Non-movers_1yr"
-,"Movers_1yr"
-,"Movers_Non-migrants_1yr"
-,"Movers_Migrants_1yr"
-,"Movers_ Migrants_External_1yr"
-,"Movers_Migrants_Internal_1yr"
-,"Movers_Migrants_Internal_Intra_1yr"
-,"Movers_Migrants_Internal_Inter_1yr"
-,"Mobility_Total_1yr"
-,"Non-movers_5yr"
-,"Movers_5yr"
-,"Movers_Non-migrants_5yr"
-,"Movers_Migrants_5yr"
-,"Movers_ Migrants_External_5yr"
-,"Movers_Migrants_Internal_5yr"
-,"Movers_Migrants_Internal_Intra_5yr"
-,"Movers_Migrants_Internal_Inter_5yr"
-,"Mobility_Total_5yr")
+names(rawData)[7:24]<- c("nonMovers_1yr"
+,"movers_1yr"
+,"movers_nonMigrants_1yr"
+,"movers_migrants_1yr"
+,"movers_migrants_external_1yr"
+,"movers_migrants_internal_1yr"
+,"movers_migrants_internal_intra_1yr"
+,"movers_migrants_internal_inter_1yr"
+,"mobility_total_1yr"
+,"nonMovers_5yr"
+,"movers_5yr"
+,"movers_nonMigrants_5yr"
+,"movers_migrants_5yr"
+,"movers_migrants_external_5yr"
+,"movers_migrants_internal_5yr"
+,"movers_migrants_internal_intra_5yr"
+,"movers_migrants_internal_inter_5yr"
+,"mobility_total_5yr")
+
 
 head(rawData) #check it worked
 
@@ -59,7 +60,7 @@ head(rawData) #check it worked
 #creating subsets
 
 #subsetting mobility variables (my DVs)
-subMobility <- rawData[,c(1,7:24)]
+rawMobility <- rawData[,c(1,7:24)]
 
 
 #creating subset for geographic info <- can use to join with col0 for visualization later
@@ -68,36 +69,214 @@ geoInfoSubset <-  rawData[, c(1:6)]
 
 
 ```{r}
-#function to rate variables and create difference variables
-f <- function(varA, varB){
-  #doing stuff
-}
-
-```
-
-
-```{r}
 #descriptives
-summary(subMobility)
+summary(rawMobility)
+```
 
-nonMoveVersusNew <- (subMobility$`Non-movers_1yr`/subMobility$Mobility_Total_1yr)- (subMobility$Movers_1yr/subMobility$Mobility_Total_1yr)
-# summary(nonMoveVersusNew)
+
+```{r}
+#now rate subMobility variables - use these for clustering
+
+#function to rate variables and create difference variables
+
+rateVar <- function(rawCount, rawTotal){
+  ratedVar <- (rawCount / rawTotal) }
+
+#now rating variables by level - hierarchy:
+
+
+# 1 year moblility
+# nonmovers, movers - top level
+#         migrants, nonmigrants - secondary level
+#     internal, external - tertiary level
+# intraprov, interprov - quaternary level
+
+# 5 year mobility 
+# nonmovers, movers - top level
+#         migrants, nonmigrants - secondary level
+#     internal, external - tertiary level
+# intraprov, interprov - quaternary level
+
+
+#attaching rawMoblity df for code simplicity 
+attach(rawMobility)
+
+# 1 year mobility variables
+
+#top level
+r_nonMovers_1yr <- rateVar(nonMovers_1yr, mobility_total_1yr)
+r_movers_1yr <- rateVar(movers_1yr, mobility_total_1yr)
+
+#secondary 
+r_nonMigrants_1yr <- rateVar(movers_nonMigrants_1yr, movers_1yr)
+r_migrants_1yr <- rateVar(movers_migrants_1yr, movers_1yr)
+
+#tertiary
+r_external_1yr <- rateVar(movers_migrants_external_1yr, movers_migrants_1yr)
+r_internal_1yr <- rateVar(movers_migrants_internal_1yr, movers_migrants_1yr)
+
+#quaternary
+r_intra_1yr <- rateVar(movers_migrants_internal_intra_1yr, movers_migrants_internal_1yr)
+r_inter_1yr <- rateVar(movers_migrants_internal_inter_1yr, movers_migrants_internal_1yr)
+
+
+
+# 5 year mobility variables
+#top level
+r_nonMovers_5yr <- rateVar(nonMovers_5yr, mobility_total_5yr)
+r_movers_5yr <- rateVar(movers_5yr, mobility_total_5yr)
+
+#secondary 
+r_nonMigrants_5yr <- rateVar(movers_nonMigrants_5yr, movers_1yr)
+r_migrants_5yr <- rateVar(movers_migrants_5yr, movers_5yr)
+
+#tertiary
+r_external_5yr <- rateVar(movers_migrants_external_5yr, movers_migrants_5yr)
+r_internal_5yr <- rateVar(movers_migrants_internal_5yr, movers_migrants_5yr)
+
+#quaternary
+r_intra_5yr <- rateVar(movers_migrants_internal_intra_5yr, movers_migrants_internal_5yr)
+r_inter_5yr <- rateVar(movers_migrants_internal_inter_5yr, movers_migrants_internal_5yr)
+
+
+#putting cleaned variables into dataframe
+cleaned_mobility_r <- cbind(r_external_1yr, r_inter_1yr, r_internal_1yr, r_intra_1yr, r_migrants_1yr, r_movers_1yr, r_nonMigrants_1yr, r_nonMovers_1yr)
+```
+
+
+```{r}
+library(tidyr)
+
+#use loop val to view names to add to each df - couldn't get code to 
+
+stringNames <- c()
+for (var in tidyselect::vars_select(ls(), ends_with('1yr') & starts_with('r'))){
+  stringNames <- append(stringNames, var)
+  # append(stringNames, var)
+  # c_mobility_1yr <- rbind(rawMobility[stringName])
+  }
+
+#1 year cleaned df
+
+c_mobility_1yr <- cbind(geoUID, r_external_1yr, r_inter_1yr, r_internal_1yr, r_intra_1yr, r_migrants_1yr, r_movers_1yr, r_nonMigrants_1yr,r_nonMovers_1yr)
+
+#5 year cleaned df
+c_mobility_5yr <- cbind(geoUID, r_external_5yr, r_inter_5yr, r_internal_5yr, r_intra_5yr, r_migrants_5yr, r_movers_5yr, r_nonMigrants_5yr,r_nonMovers_5yr)
 
 ```
 
 
 ```{r}
+#now need to deal with all other demographic variables - some are already rated, some aren't
 
-#mapping (return to)
-# Loading the rgdal package
-# install.packages("rgdal")
-library(rgdal)
 
-# Reading the shapefile using readOGR()
-shapeFile <- readOGR(".", "C:/Users/Ellie Maclennan/OneDrive - Toronto Metropolitan University/Certificate - CIND820/Data/Geographic Files/2016_DA_BoundaryFile/lda_000b16a_e.shp")
+attach(rawData) # for convenience 
 
-# View information about the shapefile
-summary(shapefile)
+#first, i will subset out variables by domain
+raw_immig <- rawData[25:40]
+raw_popDwelling <- rawData[41:46]
+raw_ageSex <- rawData[47:54]
+raw_dwellChars <- rawData[55:61]
+raw_maritalStat <- rawData[62:64]
+raw_householdsType <- rawData[65:72]
+raw_languages <- rawData[73:77]
+raw_income <- rawData[78:82]
+raw_incomePrev <- rawData[83:90]
+raw_racialIndig <- rawData[91:93]
+raw_housing <- rawData[94:110]
+raw_edu <- rawData[111:114]
+raw_labour <- rawData[115:117]
+raw_workCommute <- rawData[118:128]
+
+
+# #then i will create a list of variables already rated
+preRated_demo_vars <-rawData[c(42,45,47,48:50,52:54,61,78,80,81,83:90,115:116)]
+```
+```{r}
+#rating indepedant variables for use in models - need to be standardized as in raw counts
+
+
+
+```
+
+
+```{r}
+#exploratory linear regression - barely any results shown because of msisingness
+
+# -----------1yr------------
+
+#nonMovers
+linRegmModel_nonMovers_1yr <- lm(r_nonMovers_1yr ~ ., data = preRated_demo_vars)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_1yr)
+
+#movers
+linRegmModel_movers_1yr <- lm(r_movers_1yr ~ ., data = preRated_demo_vars)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_1yr)
+
+
+#-----------5yr------------
+#nonMovers
+linRegmModel_nonMovers_5yr <- lm(r_nonMovers_5yr ~ ., data = preRated_demo_vars)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_5yr)
+
+#movers
+linRegmModel_movers_5yr <- lm(r_movers_5yr ~ ., data = preRated_demo_vars)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_5yr)
+
+
+```
+```{r}
+#trying multiple imputation with mice package
+# Load the mice package
+library(mice)
+
+# Specify the imputation method (e.g. predictive mean matching)
+impute_method <- mice(preRated_demo_vars, method = "pmm")
+
+# Extract the completed dataset with imputed values
+imputed_data <- complete(impute_method)
+
+# Fit a multiple linear regression model using the imputed data
+model <- lm(r_nonMovers_1yr ~ ., data = imputed_data)
+
+# Print summary of the model
+summary(model)
+```
+```{r}
+#trying gwr because think there will be spatial 
+
+library(spgwr)
+# library("spDataLarge")
+
+#fitting gwr
+gwr_model <- gwr(r_nonMovers_1yr ~ ., data = preRated_demo_vars, bandwidth = 5000)
+
+#summary of model
+summary(gwr_model)
+
+```
+
+
+```{r}
+# 
+# #mapping (return to)
+# # Loading the rgdal package
+# # install.packages("rgdal")
+# library(rgdal)
+# 
+# # Reading the shapefile using readOGR()
+# shapeFile <- readOGR(".", "C:/Users/Ellie Maclennan/OneDrive - Toronto Metropolitan University/Certificate - CIND820/Data/Geographic Files/2016_DA_BoundaryFile/lda_000b16a_e.shp")
+# 
+# # View information about the shapefile
+# summary(shapefile)
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
