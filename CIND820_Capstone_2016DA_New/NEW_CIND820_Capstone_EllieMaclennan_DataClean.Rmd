@@ -1,0 +1,389 @@
+---
+title: "Ellie CIND 820 Capstone Code"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+
+#getting raw 2016 csv data into R
+
+fileName <- "C:/Users/Ellie Maclennan/OneDrive - Toronto Metropolitan University/Certificate - CIND820/Data/Revised_2016_DA/Revised_2016_DA.csv"
+
+#importing data set
+rawData <- read.csv(fileName,sep=",",
+         stringsAsFactors=FALSE,na.strings = c("",NA))
+
+
+#Q1) checking datatypes - says data type below
+sapply(rawData, class)
+head(rawData)
+```
+
+
+```{r}
+#using names function renaming the column heading names to be something more intuitive, for now keeping other column names as they are
+
+#renaming geographic info and identifiers
+names(rawData)[1:6]<- c("geoUID","provCode","provName","cdCode","cdName","daName")
+
+#renaming mobility variables
+names(rawData)[7:24]<- c("nonMovers_1yr"
+,"movers_1yr"
+,"movers_nonMigrants_1yr"
+,"movers_migrants_1yr"
+,"movers_migrants_external_1yr"
+,"movers_migrants_internal_1yr"
+,"movers_migrants_internal_intra_1yr"
+,"movers_migrants_internal_inter_1yr"
+,"mobility_total_1yr"
+,"nonMovers_5yr"
+,"movers_5yr"
+,"movers_nonMigrants_5yr"
+,"movers_migrants_5yr"
+,"movers_migrants_external_5yr"
+,"movers_migrants_internal_5yr"
+,"movers_migrants_internal_intra_5yr"
+,"movers_migrants_internal_inter_5yr"
+,"mobility_total_5yr")
+
+
+head(rawData) #check it worked
+
+
+
+
+```
+
+
+```{r}
+#creating subsets
+
+#subsetting mobility variables (my DVs)
+rawMobility <- rawData[,c(1,7:24)]
+
+
+#creating subset for geographic info <- can use to join with col0 for visualization later
+geoInfoSubset <-  rawData[, c(1:6)]
+```
+
+
+```{r}
+#descriptives
+summary(rawMobility)
+```
+
+
+```{r}
+#now rate subMobility variables - use these for clustering
+
+#function to rate variables and create difference variables
+
+rateVar <- function(rawCount, rawTotal){
+  ratedVar <- rawCount / (rawTotal + 0.0001) } #adding a super small denominator because division by 0 produced an issue of NaaN and infinite values and such
+
+#now rating variables by level - hierarchy:
+
+
+# 1 year moblility
+# nonmovers, movers - top level
+#         migrants, nonmigrants - secondary level
+#     internal, external - tertiary level
+# intraprov, interprov - quaternary level
+
+# 5 year mobility 
+# nonmovers, movers - top level
+#         migrants, nonmigrants - secondary level
+#     internal, external - tertiary level
+# intraprov, interprov - quaternary level
+
+
+#attaching rawMoblity df for code simplicity 
+attach(rawMobility)
+
+# 1 year mobility variables
+
+#top level
+r_nonMovers_1yr <- rateVar(nonMovers_1yr, mobility_total_1yr)
+r_movers_1yr <- rateVar(movers_1yr, mobility_total_1yr)
+
+#secondary 
+r_nonMigrants_1yr <- rateVar(movers_nonMigrants_1yr, movers_1yr)
+r_migrants_1yr <- rateVar(movers_migrants_1yr, movers_1yr)
+
+#tertiary
+r_external_1yr <- rateVar(movers_migrants_external_1yr, movers_migrants_1yr)
+r_internal_1yr <- rateVar(movers_migrants_internal_1yr, movers_migrants_1yr)
+
+#quaternary
+r_intra_1yr <- rateVar(movers_migrants_internal_intra_1yr, movers_migrants_internal_1yr)
+r_inter_1yr <- rateVar(movers_migrants_internal_inter_1yr, movers_migrants_internal_1yr)
+
+
+
+# 5 year mobility variables
+#top level
+r_nonMovers_5yr <- rateVar(nonMovers_5yr, mobility_total_5yr)
+r_movers_5yr <- rateVar(movers_5yr, mobility_total_5yr)
+
+#secondary 
+r_nonMigrants_5yr <- rateVar(movers_nonMigrants_5yr, movers_1yr)
+r_migrants_5yr <- rateVar(movers_migrants_5yr, movers_5yr)
+
+#tertiary
+r_external_5yr <- rateVar(movers_migrants_external_5yr, movers_migrants_5yr)
+r_internal_5yr <- rateVar(movers_migrants_internal_5yr, movers_migrants_5yr)
+
+#quaternary
+r_intra_5yr <- rateVar(movers_migrants_internal_intra_5yr, movers_migrants_internal_5yr)
+r_inter_5yr <- rateVar(movers_migrants_internal_inter_5yr, movers_migrants_internal_5yr)
+
+
+#putting cleaned variables into dataframe
+cleaned_mobility_r <- cbind(r_external_1yr, r_inter_1yr, r_internal_1yr, r_intra_1yr, r_migrants_1yr, r_movers_1yr, r_nonMigrants_1yr, r_nonMovers_1yr)
+```
+
+
+```{r}
+library(tidyr)
+
+#use loop val to view names to add to each df - couldn't get code to 
+
+stringNames <- c()
+for (var in tidyselect::vars_select(ls(), ends_with('1yr') & starts_with('r'))){
+  stringNames <- append(stringNames, var)
+  # append(stringNames, var)
+  # c_mobility_1yr <- rbind(rawMobility[stringName])
+  }
+
+#1 year cleaned df
+
+cl_mobility_1yr <- cbind(geoUID, r_external_1yr, r_inter_1yr, r_internal_1yr, r_intra_1yr, r_migrants_1yr, r_movers_1yr, r_nonMigrants_1yr,r_nonMovers_1yr)
+
+#5 year cleaned df
+cl_mobility_5yr <- cbind(geoUID, r_external_5yr, r_inter_5yr, r_internal_5yr, r_intra_5yr, r_migrants_5yr, r_movers_5yr, r_nonMigrants_5yr,r_nonMovers_5yr)
+
+```
+
+
+```{r}
+#now need to deal with all other demographic variables - some are already rated, some aren't
+
+attach(rawData) # for convenience 
+
+#first, i will subset out variables by domain just for ease of cleaning
+raw_immig <- rawData[25:28]
+raw_housing <- rawData[29:50]
+raw_dwelling <- rawData[51:56]
+raw_popDwelling <- rawData[57:58]
+
+
+#now i will add headings from text file
+names(raw_immig)<- c("nonImmig","immig","nonPR", "total_immig")
+
+names(raw_housing) <- c("owner","renter","bandHousing", "total_privHouse","notCond","total_condStat","less1PerRoom","total_pplPerRoom", "suitable", "total_suitStat", "onlyRegMaint", "total_dwellingCond", "ownTenLess30Inc","total_ownTenIncRatio","own_perMortg", "own_per30PlusInc", "own_medSheltCost","own_medValDwelling", "ten_perSubHous", "ten_per30PlusInc", "ten_medMonthSheltCost", "avgRoomPerDwell")
+
+names(raw_dwelling) <- c("typ_singleDetach", "typ_apart5MoreStor", "typ_otherAttach","typ_movableDwell", "total_DwellTyp", "avgHouseholdSize")
+
+names(raw_popDwelling) <- c("popPerChange_11To16", "popPerSqKm" )
+
+#now rating independent variables for use in models - need to be standardized as in raw counts
+
+#rating immigration, housing, dwelling, and pop variables
+attach(raw_immig)
+cl_immig <- data.frame(matrix(ncol=0, nrow=56883)) #making a df first (n row because thats the number of records I have)
+# cl_immig$geoUID <- rawData$geoUID #can add if desired
+
+cl_immig$nonImmig <- rateVar(nonImmig, total_immig)
+cl_immig$immig <- rateVar(immig, total_immig)
+cl_immig$nonPR <- rateVar(nonPR, total_immig)
+
+
+attach(raw_housing)
+cl_housing <- data.frame(matrix(ncol=0, nrow=56883))
+# cl_housing$geoUID <- rawData$geoUID #how can add geoUID to each df if want
+
+cl_housing$owner <- rateVar(owner, total_privHouse)
+cl_housing$renter <- rateVar(renter, total_privHouse)
+cl_housing$bandHousing <- rateVar(bandHousing, total_privHouse)
+
+cl_housing$notCond <- rateVar(notCond, raw_housing$total_condStat)
+cl_housing$less1PerRoom <- rateVar(less1PerRoom, total_pplPerRoom)
+cl_housing$suitable <- rateVar(suitable, total_suitStat)
+cl_housing$onlyRegMaint <- rateVar(onlyRegMaint, total_dwellingCond)
+cl_housing$ownTenLess30Inc <- rateVar(ownTenLess30Inc, total_ownTenIncRatio)
+
+#these ones already rated so just adding to cleaned DF
+cl_housing$own_perMortg <- own_perMortg
+cl_housing$own_per30PlusInc <- own_per30PlusInc
+cl_housing$own_medSheltCost <- own_medSheltCost
+cl_housing$own_medValDwelling <- own_medValDwelling
+cl_housing$ten_perSubHous <- ten_perSubHous
+cl_housing$ten_per30PlusInc <- ten_per30PlusInc
+cl_housing$ten_medMonthSheltCost <- ten_medMonthSheltCost
+cl_housing$avgRoomPerDwell <- avgRoomPerDwell
+
+attach(raw_dwelling)
+cl_dwelling <- data.frame(matrix(ncol=0, nrow=56883))
+# cl_dwelling$geoUID <- rawData$geoUID
+
+cl_dwelling$typ_singleDetach <- rateVar(typ_singleDetach, total_DwellTyp)
+cl_dwelling$typ_apart5MoreStor <- rateVar(typ_apart5MoreStor, total_DwellTyp)
+cl_dwelling$typ_otherAttach <- rateVar(typ_otherAttach, total_DwellTyp)
+cl_dwelling$typ_movableDwell <- rateVar(typ_movableDwell, total_DwellTyp)
+
+attach(raw_popDwelling) #these ones also all pre-rated so just adding to a df to keep clear is clean
+# cl_popDwelling$geoUID <- rawData$geoUID
+
+cl_popDwelling <- raw_popDwelling
+# cl_popDwelling$geoUID <- rawData$geoUID
+
+#now just merging dfs
+finalCleanedIVs <- cbind(rawData$geoUID, cl_housing, cl_dwelling,cl_popDwelling) #not including cl_immig because too collinear with DVs
+names(finalCleanedIVs)[names(finalCleanedIVs) == "rawData$geoUID"] <- "geoUID"
+
+```
+```{r}
+write.csv(raw_housing, file = "raw_housing", row.names = TRUE)
+```
+
+
+
+
+```{r}
+#trying multiple imputation with mice package
+# Load the mice package
+library(mice)
+
+# Specify the imputation method (e.g. predictive mean matching)
+impute_method <- mice(finalCleanedIVs, method = "cart")
+
+# Extract the completed dataset with imputed values
+finalCleanedIVs <- complete(impute_method)
+```
+
+
+```{r}
+#checking variables will work in models
+
+countNA <- function(theCol){
+  sumNAs <- sum(is.na(theCol))
+}
+sapply(finalCleanedIVs, countNA)
+
+countInf <- function(theCol){
+  sumInfs <- sum(is.infinite(theCol))
+}
+sapply(finalCleanedIVs,countInf)
+
+countNAN <- function(theCol){
+  sumNAs <- sum(is.nan(theCol))
+}
+
+sapply(finalCleanedIVs, countNAN)
+
+#making infinite values and Naans just read as NAs # do on rated actually??
+
+cl_mobility_1yr[is.infinite(cl_mobility_1yr) | is.nan(cl_mobility_1yr)] <- NA
+cl_mobility_5yr[is.infinite(cl_mobility_5yr) | is.nan(cl_mobility_1yr)] <- NA
+
+
+# mobility_total_1yr[is.infinite(mobility_total_1yr) | is.nan(mobility_total_1yr)] <- NA
+# mobility_total_5yr[is.infinite(mobility_total_5yr) | is.nan(mobility_total_5yr)] <- NA
+
+
+finalCleanedIVs[sapply(finalCleanedIVs, is.infinite)] <- NA
+finalCleanedIVs[sapply(finalCleanedIVs, is.nan)] <- NA
+
+
+```
+
+```{r}
+#now exporting final cleaned IVs to CSV - so can work with without needing to wait for imputation each time and also mobility variables
+write.csv(finalCleanedIVs, file = "finalCleanedIVs.csv", row.names = TRUE)
+write.csv(cl_mobility_1yr, file = "cl_mobility_1yr.csv", row.names = TRUE)
+write.csv(cl_mobility_5yr, file = "cl_mobility_5yr.csv", row.names = TRUE)
+
+```
+
+
+
+```{r}
+#making cl_mobility matrices dataframes - easier for manipulation
+cl_mobility_1yr <- as.data.frame(cl_mobility_1yr)
+cl_mobility_5yr <-as.data.frame(cl_mobility_5yr)
+```
+
+
+```{r}
+#linear regression
+
+# -----------1yr------------
+
+attach(cl_mobility_1yr)
+#nonMovers
+linRegmModel_nonMovers_1yr <- lm(cl_mobility_1yr$r_nonMovers_1yr ~ ., data = finalCleanedIVs)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_1yr)
+
+
+#-----------5yr------------
+
+attach(cl_mobility_5yr)
+#nonMovers
+linRegmModel_nonMovers_5yr <- lm(r_nonMovers_5yr ~ ., data = finalCleanedIVs)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_5yr)
+
+
+```
+
+```{r}
+#running factor analysis on IVs
+library(psych)
+library(psychTools)
+
+#cant run on infinite vals
+finalCleanedIVs <- finalCleanedIVs[complete.cases(finalCleanedIVs), ]
+
+factor_model <- factanal(finalCleanedIVs[,2:ncol(finalCleanedIVs)], factors = 3) #not including geoUID in factors
+print(factor_model)
+
+#now going to try rerunning regression after FA
+
+#computing the factor scores
+factor_scores <- factor.scores(factor_model, finalCleanedIVs)
+
+# Add the factor scores as new columns to the dataframe
+finalCleanedIVs$factor1 <- factor_scores[, 1]
+finalCleanedIVs$factor2 <- factor_scores[, 2]
+finalCleanedIVs$factor3 <- factor_scores[, 3]
+
+# Fit a regression model with the factor scores as predictors and cl_mobility_1yr as the response variable
+reg_model <- lm(cl_mobility_1yr ~ factor1 + factor2 + factor3, data = finalCleanedIVs)
+
+# Print the regression results
+summary(reg_model)
+
+
+```
+
+
+
+```{r}
+
+
+```
+
+
+```{r}
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

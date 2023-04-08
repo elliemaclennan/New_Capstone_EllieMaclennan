@@ -1,0 +1,264 @@
+---
+title: "Capstone Analysis"
+output: html_document
+
+---
+
+
+
+```{r}
+
+#importing cleaned datasets - had outputed to csv files because cleaning stage is slow with imputation
+
+ivFile <- "finalCleanedIVs.csv"
+mobility1File <- "cl_mobility_1yr.csv"
+mobility5File <- "cl_mobility_5yr.csv"
+
+#importing datasets
+finalCleanedIVs <- read.csv(ivFile,sep=",",
+         stringsAsFactors=FALSE,na.strings = c("",NA))
+
+cl_mobility_1yr <- read.csv(mobility1File,sep=",",
+         stringsAsFactors=FALSE,na.strings = c("",NA))
+
+cl_mobility_5yr <- read.csv(mobility5File,sep=",",
+         stringsAsFactors=FALSE,na.strings = c("",NA))
+
+
+#now removing number and geoUID so won't be include in analyses
+mobility_1yr <- cl_mobility_1yr[,3:10]
+mobility_5yr <- cl_mobility_5yr[,3:10]
+finalCleanedIVs <- finalCleanedIVs[,3:24]
+
+```
+
+
+```{r}
+#running exploratory analysis on IVs
+summary(finalCleanedIVs)
+
+#seems there may be some skew based on median/mean differences
+```
+
+
+```{r}
+#exploring pca to see if may explain variables well
+library (psych)
+
+pc_IV <- princomp(finalCleanedIVs,cor=TRUE,score=TRUE)
+summary(pc_IV) #doesn't seem great
+screeplot(pc_IV, type= "line")
+
+pc_IV$loadings #can see loadings are messy
+
+#ran KMO - overall value of .65 - considered mediocre - don't correlate well
+KMO(finalCleanedIVs) 
+
+#because loadings and KMO not great, won't be using pca for this model
+
+```
+
+
+
+```{r}
+#checking assumptions of linear regression can be met with this dataset in below sections
+library(car)
+```
+
+
+
+```{r}
+#linear regression - first runs of the model to check where VIF
+
+# -----------1yr------------
+
+#nonMovers
+linRegmModel_nonMovers_1yr <- lm(cl_mobility_1yr$r_nonMovers_1yr ~ ., data = finalCleanedIVs)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_1yr)
+
+
+#-----------5yr------------
+#nonMovers
+linRegmModel_nonMovers_5yr <- lm(cl_mobility_5yr$r_nonMovers_5yr ~ ., data = finalCleanedIVs)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_5yr)
+```
+
+
+```{r}
+#further checks to model
+
+#multicollinearity check
+vif(linRegmModel_nonMovers_1yr)
+vif(linRegmModel_nonMovers_5yr)
+
+corMatrix <- cor(finalCleanedIVs) #futher checking how IVs correlate 
+
+
+#should remove some variables from model 
+finalImpIVs <- finalCleanedIVs[,c(1,4:18,20,22)]
+head(finalImpIVs)
+```
+
+
+```{r}
+#rerunning original model with just important variables
+# -----------1yr------------
+
+#nonMovers
+linRegmModel_nonMovers_1yr <- lm(cl_mobility_1yr$r_nonMovers_1yr ~ ., data = finalImpIVs)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_1yr)
+
+
+#-----------5yr------------
+#nonMovers
+linRegmModel_nonMovers_5yr <- lm(cl_mobility_5yr$r_nonMovers_5yr ~ ., data = finalImpIVs)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_5yr)
+
+
+#checking multicollinearity - now values all okay!
+vif(linRegmModel_nonMovers_1yr) 
+vif(linRegmModel_nonMovers_5yr)
+
+
+```
+
+
+
+```{r}
+
+#checking normality #1
+
+#1 yr
+qqPlot(linRegmModel_nonMovers_1yr, main="Normal Q-Q Plot")
+qqline(linRegmModel_nonMovers_1yr$residuals)
+spreadLevelPlot(linRegmModel_nonMovers_1yr)
+
+results <- lapply(finalImpIVs, function(x) ks.test(x, "pnorm"))
+
+# print the results for each variable
+names(results) <- names(finalImpIVs)
+print(results)
+
+#5 yr
+qqPlot(linRegmModel_nonMovers_5yr, main="Normal Q-Q Plot")
+qqline(linRegmModel_nonMovers_5yr$residuals)
+spreadLevelPlot(linRegmModel_nonMovers_1yr)
+
+
+```
+
+
+
+
+```{r}
+
+#looking at residual normality visually
+hist(linRegmModel_nonMovers_1yr$residuals, breaks=20)
+hist(linRegmModel_nonMovers_5yr$residuals, breaks=20)
+
+#trying jarque bera test
+library(tseries)
+residuals <- resid(linRegmModel_nonMovers_1yr)
+jb_test <- jarque.bera.test(residuals)
+
+#printing results
+print(jb_test)
+
+
+#also running ks test to check for normality
+results <- lapply(finalImpIVs, function(x) ks.test(x, "pnorm"))
+
+# print the results for each variable
+names(results) <- names(finalImpIVs)
+print(results)
+
+
+```
+
+
+```{r}
+#check outliers
+outlierTest(linRegmModel_nonMovers_1yr)
+outlierTest(linRegmModel_nonMovers_5yr)
+
+#removing records that are outliers
+finalImpIVs     <- finalImpIVs[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ]
+cl_mobility_1yr <- cl_mobility_1yr[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ]
+cl_mobility_5yr <- cl_mobility_5yr[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ]
+pc_IV_scores <- pc_IV_scores[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ]
+```
+
+
+```{r}
+#rerunning original model but as glm
+# -----------1yr------------
+
+#nonMovers
+linRegmModel_nonMovers_1yr <- glm(cl_mobility_1yr$r_nonMovers_1yr ~ ., data = finalImpIVs)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_1yr)
+
+
+#-----------5yr------------
+#nonMovers
+linRegmModel_nonMovers_5yr <- glm(cl_mobility_5yr$r_nonMovers_5yr ~ ., data = finalImpIVs)
+
+#printing summary of the model
+summary(linRegmModel_nonMovers_5yr)
+
+```
+
+
+```{r}
+#rerunning original model but with pca
+# -----------1yr------------
+
+#nonMovers
+pcaModel_nonMovers_1yr <- lm(cl_mobility_1yr$r_nonMovers_1yr ~ ., pc_IV_scores)
+
+#printing summary of the model
+summary(pcaModel_nonMovers_1yr)
+
+
+#-----------5yr------------
+#nonMovers
+pcaModel_nonMovers_5yr <- lm(cl_mobility_5yr$r_nonMovers_5yr ~ ., data = pc_IV_scores)
+
+#printing summary of the model
+summary(pcaModel_nonMovers_5yr)
+```
+
+
+
+
+```{r}
+#not fully normal data - so running robust regression
+
+#need unlisted variables for input
+
+finalImpIVs_unlist <- lapply(finalImpIVs, unlist)
+
+library(MASS)
+robust_reg_1yr <- rlm(cl_mobility_1yr$r_nonMovers_1yr ~ finalImpIVs_unlist$owner + finalImpIVs_unlist$notCond + finalImpIVs_unlist$less1PerRoom + finalImpIVs_unlist$suitable+finalImpIVs_unlist$onlyRegMaint+finalImpIVs_unlist$ownTenLess30Inc+finalImpIVs_unlist$own_perMortg+ finalImpIVs_unlist$own_per30PlusInc+finalImpIVs_unlist$own_medSheltCost+finalImpIVs_unlist$own_medValDwelling+finalImpIVs_unlist$ten_perSubHous+finalImpIVs_unlist$ten_per30PlusInc+finalImpIVs_unlist$ten_medMonthSheltCost+finalImpIVs_unlist$avgRoomPerDwell+finalImpIVs_unlist$typ_singleDetach+finalImpIVs_unlist$typ_apart5MoreStor+finalImpIVs_unlist$typ_movableDwell+finalImpIVs_unlist$popPerSqKm)
+summary(robust_reg_1yr)
+
+plot(robust_reg_1yr)
+```
+
+
+```{r}
+#exploring mobility data
+summary(cl_mobility_1yr)
+summary(cl_mobility_5yr)
+
+```
+

@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?><messages><msg code="0" type="2">Start Time: April 7, 2023 10:55:35 PM</msg><msg code="313" type="100">ERROR 000313: The length of Field Name must not be larger than 10</msg><msg code="304" type="50">WARNING 000304: Renamed field r_movers_5yr_num to r_movers_5</msg><msg code="0" type="0">Adding r_movers_5 to lda_000b16a_e...</msg><msg code="539" type="100">ERROR 000539: Traceback (most recent call last):
+  File "&lt;expression&gt;", line 1, in &lt;module&gt;
+ValueError: invalid literal for int() with base 10: '0.673711552955227'
+</msg><msg code="-2147467259" type="100">Failed to execute (CalculateField).</msg><msg code="0" type="3">Failed at April 7, 2023 10:55:37 PM (Elapsed Time: 1.75 seconds)</msg></messages>

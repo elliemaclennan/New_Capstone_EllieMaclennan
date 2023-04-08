@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?><messages><msg code="0" type="2">Start Time: April 7, 2023 11:13:24 PM</msg><msg code="539" type="100">ERROR 000539: Traceback (most recent call last):
+  File "&lt;expression&gt;", line 1, in &lt;module&gt;
+ValueError: invalid literal for int() with base 10: '0.799'
+</msg><msg code="-2147467259" type="100">Failed to execute (CalculateField).</msg><msg code="0" type="3">Failed at April 7, 2023 11:13:24 PM (Elapsed Time: 0.62 seconds)</msg></messages>
