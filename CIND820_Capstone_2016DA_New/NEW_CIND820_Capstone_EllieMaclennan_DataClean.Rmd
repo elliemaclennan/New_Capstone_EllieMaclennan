@@ -344,31 +344,7 @@ summary(linRegmModel_nonMovers_5yr)
 ```
 
 ```{r}
-#running factor analysis on IVs
-library(psych)
-library(psychTools)
 
-#cant run on infinite vals
-finalCleanedIVs <- finalCleanedIVs[complete.cases(finalCleanedIVs), ]
-
-factor_model <- factanal(finalCleanedIVs[,2:ncol(finalCleanedIVs)], factors = 3) #not including geoUID in factors
-print(factor_model)
-
-#now going to try rerunning regression after FA
-
-#computing the factor scores
-factor_scores <- factor.scores(factor_model, finalCleanedIVs)
-
-# Add the factor scores as new columns to the dataframe
-finalCleanedIVs$factor1 <- factor_scores[, 1]
-finalCleanedIVs$factor2 <- factor_scores[, 2]
-finalCleanedIVs$factor3 <- factor_scores[, 3]
-
-# Fit a regression model with the factor scores as predictors and cl_mobility_1yr as the response variable
-reg_model <- lm(cl_mobility_1yr ~ factor1 + factor2 + factor3, data = finalCleanedIVs)
-
-# Print the regression results
-summary(reg_model)
 
 
 ```

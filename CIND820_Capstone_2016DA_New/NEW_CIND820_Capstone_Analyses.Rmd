@@ -26,6 +26,7 @@ cl_mobility_5yr <- read.csv(mobility5File,sep=",",
 
 
 #now removing number and geoUID so won't be include in analyses
+geoUID <- cl_mobility_1yr[1:2]
 mobility_1yr <- cl_mobility_1yr[,3:10]
 mobility_5yr <- cl_mobility_5yr[,3:10]
 finalCleanedIVs <- finalCleanedIVs[,3:24]
@@ -193,7 +194,7 @@ outlierTest(linRegmModel_nonMovers_5yr)
 finalImpIVs     <- finalImpIVs[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ]
 cl_mobility_1yr <- cl_mobility_1yr[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ]
 cl_mobility_5yr <- cl_mobility_5yr[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ]
-pc_IV_scores <- pc_IV_scores[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ]
+pc_IV_scores <- as.data.frame(pc_IV_scores[-c(1,49472, 18922, 40336, 28623, 47910,28492, 28492, 32484, 32780, 28411, 22217), ])
 ```
 
 
@@ -261,4 +262,18 @@ summary(cl_mobility_1yr)
 summary(cl_mobility_5yr)
 
 ```
+
+```{r}
+finalImpIVs[geoUID] <- geoUID$geoUID
+head(finalImpIVs)
+
+write.csv(finalImpIVs, file = "a_finalCleanedIVs.csv", row.names = TRUE)
+write.csv(cl_mobility_1yr, file = "a_cl_mobility_1yr.csv", row.names = TRUE)
+write.csv(cl_mobility_5yr, file = "a_cl_mobility_5yr.csv", row.names = TRUE)
+```
+
+
+
+
+
 
