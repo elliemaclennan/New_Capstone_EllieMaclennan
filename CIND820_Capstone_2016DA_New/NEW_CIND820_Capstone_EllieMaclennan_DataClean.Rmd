@@ -260,19 +260,6 @@ summary(cl_mobility_5yr)
 
 
 ```{r}
-#trying multiple imputation with mice package
-# Load the mice package
-library(mice)
-
-#secifying the imputation method (e.g. predictive mean matching)
-impute_method <- mice(finalCleanedIVs, method = "sample")
-
-#extracting the completed dataset with imputed values
-finalCleanedIVs <- complete(impute_method)
-```
-
-
-```{r}
 #checking variables will work in models
 
 countNA <- function(theCol){
@@ -306,6 +293,19 @@ finalCleanedIVs[sapply(finalCleanedIVs, is.nan)] <- NA
 
 
 ```
+
+```{r}
+#trying multiple imputation with mice package
+# Load the mice package
+library(mice)
+
+#secifying the imputation method 
+impute_method <- mice(finalCleanedIVs, method = "sample")
+
+#extracting the completed dataset with imputed values
+finalCleanedIVs <- complete(impute_method)
+```
+
 
 ```{r}
 #now exporting final cleaned IVs to CSV - so can work with without needing to wait for imputation each time and also mobility variables
@@ -349,18 +349,7 @@ summary(linRegmModel_nonMovers_5yr)
 
 ```
 
-```{r}
 
-
-
-```
-
-
-
-```{r}
-
-
-```
 
 
 ```{r}
