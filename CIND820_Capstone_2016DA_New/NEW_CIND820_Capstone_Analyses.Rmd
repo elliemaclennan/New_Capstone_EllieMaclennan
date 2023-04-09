@@ -276,6 +276,49 @@ write.csv(cl_mobility_5yr, file = "a_cl_mobility_5yr.csv", row.names = TRUE)
 ```
 
 
+```{r}
+#removing outliers more robustly
+finalImpIVs_copy <- finalImpIVs
+cl_mobility_1yr_copy <- cl_mobility_1yr
+cl_mobility_5yr_copy <- cl_mobility_5yr
+
+#for IVs
+
+for (col in names(finalImpIVs_copy)) {
+  mean_col <- mean(finalImpIVs_copy[, col], na.rm = TRUE)
+  sd_col <- sd(finalImpIVs_copy[, col], na.rm = TRUE)
+  outliers <- abs((finalImpIVs_copy[, col] - mean_col) / sd_col) > 2
+  finalImpIVs_copy <- finalImpIVs_copy[!outliers, ]
+}
+
+finalImpIVs_no_outliers <- finalImpIVs_copy
+
+
+#for dvs
+
+#1yr
+for (col in names(cl_mobility_1yr)) {
+  mean_col <- mean(cl_mobility_1yr[, col])
+  sd_col <- sd(cl_mobility_1yr[, col])
+  outliers <- abs((cl_mobility_1yr[, col] - mean_col) / sd_col) > 3.5 #outlier threshold
+  cl_mobility_1yr <- cl_mobility_1yr[!outliers, ]
+  finalImpIVs <- finalImpIVs[!outliers, ]
+  cl_mobility_5yr <- cl_mobility_5yr[!outliers, ]
+}
+#5yr
+for (col in names(cl_mobility_5yr)) {
+  mean_col <- mean(cl_mobility_5yr[, col])
+  sd_col <- sd(cl_mobility_5yr[, col])
+  outliers <- abs((cl_mobility_5yr[, col] - mean_col) / sd_col) > 3.5 #outlier threshold
+  cl_mobility_5yr <- cl_mobility_5yr[!outliers, ]
+  finalImpIVs <- finalImpIVs[!outliers, ]
+  cl_mobility_5yr <- cl_mobility_5yr[!outliers, ]
+} 
+
+
+summary(cl_mobility_1yr)
+
+```
 
 
 

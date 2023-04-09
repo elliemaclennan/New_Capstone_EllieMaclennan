@@ -74,6 +74,8 @@ geoInfoSubset <-  rawData[, c(1:6)]
 ```{r}
 #descriptives
 summary(rawMobility)
+write.csv(rawMobility, file = "rawMobility.csv", row.names = TRUE)
+
 ```
 
 
@@ -144,6 +146,9 @@ r_inter_5yr <- rateVar(movers_migrants_internal_inter_5yr, movers_migrants_inter
 
 #putting cleaned variables into dataframe
 cleaned_mobility_r <- cbind(r_external_1yr, r_inter_1yr, r_internal_1yr, r_intra_1yr, r_migrants_1yr, r_movers_1yr, r_nonMigrants_1yr, r_nonMovers_1yr)
+```
+```{r}
+summary(cleaned_mobility_r)
 ```
 
 
@@ -247,7 +252,8 @@ names(finalCleanedIVs)[names(finalCleanedIVs) == "rawData$geoUID"] <- "geoUID"
 
 ```
 ```{r}
-write.csv(raw_housing, file = "raw_housing", row.names = TRUE)
+summary(cl_mobility_1yr)
+summary(cl_mobility_5yr)
 ```
 
 
@@ -258,10 +264,10 @@ write.csv(raw_housing, file = "raw_housing", row.names = TRUE)
 # Load the mice package
 library(mice)
 
-# Specify the imputation method (e.g. predictive mean matching)
-impute_method <- mice(finalCleanedIVs, method = "cart")
+#secifying the imputation method (e.g. predictive mean matching)
+impute_method <- mice(finalCleanedIVs, method = "sample")
 
-# Extract the completed dataset with imputed values
+#extracting the completed dataset with imputed values
 finalCleanedIVs <- complete(impute_method)
 ```
 
